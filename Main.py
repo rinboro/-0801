@@ -129,12 +129,51 @@ def main():
                 window['-MEMOLIST-'].update(get_memo_list(memos))  # 全メモを表示
 
         if event == '編集':
+            # リストボックスで選択されているアイテムのインデックスを取得
             selected_indices = window['-MEMOLIST-'].get_indexes()
             if selected_indices:
+                # 選択されている最初のアイテムのインデックスを取得
                 index = selected_indices[0]
-                memos[index] = edit_memo(memos[index])  # 選択されたメモを編集
-                window['-MEMOLIST-'].update(get_memo_list(memos))  # リスト表示を更新
-                save_memos(memos)  # 変更を保存
+                
+                # 検索結果が表示されている場合の処理
+                if values['-SEARCH-']:
+                    # 検索語を取得
+                    search_term = values['-SEARCH-']
+                    # 検索語に一致するメモをフィルタリング
+                    matched_memos = [memo for memo in memos if search_term.lower() in memo['content'].lower()]
+                    
+                    # 選択されたインデックスが一致したメモの範囲内にある場合
+                    if index < len(matched_memos):
+                        # 選択されたメモを取得
+                        selected_memo = matched_memos[index]
+                        # 元のmemosリスト内での選択されたメモのインデックスを取得
+                        original_index = memos.index(selected_memo)
+                    else:
+                        # 選択されたメモが見つからない場合、エラーメッセージを表示して処理をスキップ
+                        sg.popup_error('選択されたメモが見つかりません。')
+                        continue
+                else:
+                    # 検索結果が表示されていない場合、選択されたインデックスをそのまま使用
+                    original_index = index
+
+                # 選択されたメモを編集
+                edited_memo = edit_memo(memos[original_index])
+                # 編集されたメモで元のメモを更新
+                memos[original_index] = edited_memo
+                
+                # メモリストの表示を更新
+                if values['-SEARCH-']:
+                    # 検索結果が表示されている場合、再度検索を行い結果を更新
+                    matched_memos = [memo for memo in memos if search_term.lower() in memo['content'].lower()]
+                    window['-MEMOLIST-'].update(get_memo_list(matched_memos))
+                else:
+                    # 検索結果が表示されていない場合、全メモのリストを更新
+                    window['-MEMOLIST-'].update(get_memo_list(memos))
+                
+                # 変更をファイルに保存
+                save_memos(memos)
+
+
 
         if event == '削除':
             selected_indices = window['-MEMOLIST-'].get_indexes()
